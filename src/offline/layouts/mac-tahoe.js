@@ -108,7 +108,7 @@ for (var screen = 0; screen < screenCount; screen++) {
 
     var launcher = dock.addWidget("org.kde.mac-tahoe-liquid-kde.launcher");
     launcher.currentConfigGroup = ["General"];
-    launcher.writeConfig("icon", "view-app-grid");
+    launcher.writeConfig("icon", "start-here-kubuntu");
     // The installer selects the new edition when migrating between editions.
     if (typeof mttkdeLauncherPreset !== "undefined"
             && (mttkdeLauncherPreset === 1 || mttkdeLauncherPreset === 2)) {

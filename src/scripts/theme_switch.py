@@ -1745,6 +1745,10 @@ def _apply_unlocked(mode: str, context: str = "user") -> bool:
     # before our per-mode state has seen it.
     wallpaper_before = _capture_wallpapers_with_retry()
 
+    # Preserve the user's own splash (Kubuntu branding): the live
+    # look-and-feel apply can clear or replace [KSplash] Theme.
+    splash_before = _kread("ksplashrc", "KSplash", "Theme")
+
     # Apply the live look-and-feel while Plasma still sees the outgoing
     # package in kdeglobals.  Writing the target package first can make the
     # live tool treat parts of the transition as already current, leaving
@@ -1757,6 +1761,9 @@ def _apply_unlocked(mode: str, context: str = "user") -> bool:
     config_ok = write_kde_theme_config(
         mode, force_color_reload=True,
     )
+    if splash_before:
+        _kwrite("--file", "ksplashrc", "--group", "KSplash",
+                "--key", "Theme", splash_before)
     if not config_ok:
         print(tr('theme apply: core KDE config writes failed, theme not fully applied'), file=sys.stderr)
     try:
