@@ -541,6 +541,43 @@ def detect_mode_by_time() -> str:
     return "light" if 6 <= h < 18 else "dark"
 
 
+def plasmashell_ready() -> bool:
+    """Whether plasmashell owns its session-bus name, i.e. a live apply can
+    actually repaint the desktop."""
+    try:
+        result = _run_user(
+            ["dbus-send", "--session", "--print-reply",
+             "--dest=org.freedesktop.DBus", "/org/freedesktop/DBus",
+             "org.freedesktop.DBus.NameHasOwner",
+             "string:org.kde.plasmashell"],
+            timeout=5, capture=True,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return (result.returncode == 0
+            and "boolean true" in (result.stdout or "").lower())
+
+
+def wait_for_plasmashell(timeout: float = 90.0) -> bool:
+    """Do not run the automatic boot apply before the desktop can render it.
+
+    The timer's Persistent catch-up fires at boot in parallel with session
+    startup, so the service can run while plasmashell is still coming up.
+    plasma-apply-lookandfeel exits 0 against a not-yet-ready bus WITHOUT
+    re-rendering, leaving the desktop on the previous session's light or dark
+    mode until the next transition — a race that made the startup appearance
+    look random. Bounded so headless/lingering sessions still apply config.
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        if plasmashell_ready():
+            return True
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return False
+        time.sleep(min(1.0, remaining))
+
+
 def detect_mode_by_system() -> str | None:
     """The light/dark mode the DESKTOP currently wants, read from the live
     system rather than the clock. Used only by the explicit ``follow-system``
@@ -1665,7 +1702,8 @@ def _restore_own_compiled_effects(*, refresh: bool = False) -> None:
 def _apply_lookandfeel_live(laf: str) -> bool:
     """Up to three attempts: 2s lead-in, then 6s between retries. On a
     fresh login plasma-apply-lookandfeel exits 0 against a not-yet-ready
-    bus WITHOUT re-rendering — don't shorten the lead-in."""
+    bus WITHOUT re-rendering — don't shorten the lead-in, and never trust
+    that success until plasmashell owns its bus name."""
     if not _have("plasma-apply-lookandfeel"):
         return False
     for attempt in range(_LAF_APPLY_ATTEMPTS):
@@ -1673,6 +1711,8 @@ def _apply_lookandfeel_live(laf: str) -> bool:
             time.sleep(_LAF_APPLY_FIRST_WAIT_SECONDS)
         else:
             time.sleep(_LAF_APPLY_RETRY_SLEEP_SECONDS)
+        if not plasmashell_ready():
+            continue
         if _run_live_plasma_tool(
             ["plasma-apply-lookandfeel", "-a", laf, "--keep-auto"],
         ):
@@ -1903,6 +1943,9 @@ def main(argv: list[str]) -> int:
                   "automatic service will retry", file=sys.stderr)
             return 75  # EX_TEMPFAIL; only this result restarts the user unit.
         mode = detect_mode_by_time()
+        if not wait_for_plasmashell():
+            print("theme apply: Plasma session not reachable yet; "
+                  "applying configuration for the next login", file=sys.stderr)
     if mode not in ("light", "dark"):
         print(tr(USAGE), file=sys.stderr)
         return 1

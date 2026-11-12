@@ -13,9 +13,12 @@ import theme_switch
 @pytest.fixture
 def boot(monkeypatch):
     state = SimpleNamespace(elapsed=0.0, hour=15, queries=0, applied=[],
-                            systemd=True, available=True, replies=[])
+                            systemd=True, available=True, replies=[],
+                            plasma_ready=True, ready_at=0.0)
     def sleep(seconds):
         state.elapsed += seconds
+        if state.elapsed >= state.ready_at:
+            state.plasma_ready = True
     def query(command, **kwargs):
         assert command == ["timedatectl", "show", "--property=NTP",
                            "--property=NTPSynchronized"]
@@ -40,6 +43,8 @@ def boot(monkeypatch):
     monkeypatch.setattr(theme_switch, "_have", lambda _: state.available)
     monkeypatch.setattr(theme_switch, "_run_user", query)
     monkeypatch.setattr(theme_switch, "_sync_session_env", lambda: None)
+    monkeypatch.setattr(theme_switch, "plasmashell_ready",
+                        lambda: state.plasma_ready)
     monkeypatch.setattr(theme_switch, "apply", lambda mode, **_: (
         state.applied.append(mode) or True))
     return state
@@ -99,3 +104,26 @@ def test_user_service_retries_only_clock_sync_deferral():
             "src/offline/mac-tahoe-liquid-kde-theme.service").read_text()
     assert "RestartForceExitStatus=75" in unit
     assert "RestartSec=15s" in unit
+
+
+def test_auto_waits_until_plasmashell_can_render(boot):
+    """The timer's Persistent catch-up fires at boot in parallel with session
+    startup. Applying then would repaint nothing and leave the previous
+    session's mode on screen, so ``auto`` must wait for plasmashell."""
+    boot.replies = ["synchronized"]
+    boot.plasma_ready = False
+    boot.ready_at = 4.0
+    assert theme_switch.main(["auto"]) == 0
+    assert boot.elapsed == 4
+    assert boot.applied == ["dark"]
+
+
+def test_auto_applies_config_after_bounded_wait_when_no_desktop_appears(boot):
+    """A headless/lingering session must not hang: after the bounded wait the
+    configuration is still applied for the next login."""
+    boot.replies = ["synchronized"]
+    boot.plasma_ready = False
+    boot.ready_at = float("inf")
+    assert theme_switch.main(["auto"]) == 0
+    assert boot.elapsed == 90
+    assert boot.applied == ["dark"]
