@@ -1,162 +1,66 @@
 {
-  "version": "0.67.5",
-  "source_sha256": "f9c26ada6ae3e5c34b43fc7f10a77c95ad889a6784ee6fb3731c795dca5614b7",
-  "environment": "CachyOS KWin 6.7.4; isolated 6.6.5/6.8.2 SDK images; KDE neon KWin 6.8.1 disposable Wayland VMs",
+  "version": "0.68.4",
+  "source_sha256": "3f8f23af0b8cf329b564efbcec6442d5c26c858f7c68c9ce209c546b449bc0c2",
+  "environment": "Native Qt 6.11.2/KF6 style build and offscreen checks; private Xvfb/KWin X11 rendering; four menu captures in the pinned KDE neon Plasma/KWin 6.8.1 Wayland VM at 3840x2160, scale 2. Edition-specific prepared base hashes are recorded in capture provenance.",
   "checks": [
     {
-      "command": "GitHub Actions run 42783277906: test (0), test (1), cross-distro (fedora), cross-distro (neon)",
+      "command": "QT_QPA_PLATFORM=offscreen python -m pytest -q tests/test_continuous_menu.py tests/test_kvantum_step.py tests/test_step_guards.py tests/test_theme_switch.py tests/test_preflight.py tests/test_nix.py; sandbox-blocked cases: XDG_STATE_HOME=/tmp/menu-squircle/test-state QT_QPA_PLATFORM=offscreen python -m pytest -q tests/test_step_guards.py::test_window_decorations_clean_ok_when_writes_succeed tests/test_theme_switch.py::test_scheduled_job_prefers_plasma_bus_over_runtime_socket",
       "result": "passed",
-      "detail": "Selected CI jobs passed on c1b7edaaa6890f0b38ec944392dbd8e555ccf24f. Final implementation and component ledger are byte-identical; subsequent changes add a passing native compatibility regression and release bookkeeping. https://github.com/lestercorderomurillo/macos-tahoe-liquid-kde/actions/runs/42783277906"
+      "detail": "199 passed initially; the two environment-blocked cases passed with isolated state and private Unix socket permission. Native adapter compiled with Qt 6.11.2 and KF6WindowSystem; four actual plugin raster/metric/fallback cases passed."
     },
     {
-      "command": "python3 -m pytest tests/test_glass_presets.py::test_native_glass_shader_pixels -q -p no:cacheprovider",
+      "command": "QT_QPA_PLATFORM=offscreen python -m pytest -q tests/test_menu_rounding.py tests/test_glass_surfaces.py tests/test_static.py -k 'menu or kvantum or surface'",
       "result": "passed",
-      "detail": "Previously failing pixel probe passed after aligning its vertex data with the shader local-pixel contract; isolated Xvfb, host Qt 6.11.2."
+      "detail": "54 passed, 23 deselected."
     },
     {
-      "command": "Compile tests/glass/shader.cpp using Qt6Gui/Qt6OpenGL/Qt6Svg in mttkde-acrylic-x11:6.6; xvfb-run -a /tmp/shader-probe <shaders> <staged themes>",
+      "command": "QT_QPA_PLATFORM=offscreen python -m pytest -q tests/test_kvantum_step.py -k 'continuous_menu or missing_menu'",
       "result": "passed",
-      "detail": "KWin 6.6 environment: colors, orientation, coverage, premultiplication and both GLSL profiles verified. Native executable used because this minimal SDK image has no pytest."
+      "detail": "2 passed; install/reinstall/uninstall and failed activation preserve the distro-owned engine."
     },
     {
-      "command": "cmake configure/build Acrylic Glass: host /tmp/pr121-qualified-build; mttkde-acrylic-x11:6.6; mttkde-acrylic:6.8.2-base",
+      "command": "GOLDEN_GATE_TAHOE_SOURCE=/tmp/tahoe-menu-reference MAC_TAHOE_NO_UPDATE_CHECK=true python bootstrap.py --prepare; QT_QPA_PLATFORM=offscreen python -m pytest -q tests/test_continuous_menu.py tests/test_glass_surfaces.py (prepared build/e7feb5b65af22086063e)",
       "result": "passed",
-      "detail": "KWin 6.6.5 X11, 6.7.4 Wayland/X11 and 6.8.2 Wayland built successfully. Existing source fixes were reused; all affected backend builds repeated after legacy-property correction."
+      "detail": "34 passed against the prepared Golden Gate source."
     },
     {
-      "command": "python3 -m pytest tests/test_acrylic_glass_wobbly.py tests/test_acrylic_capture_safety.py -q -p no:cacheprovider; then test_native_wobbly_property_compatibility",
+      "command": "python /tmp/menu-squircle/x11-run.py",
       "result": "passed",
-      "detail": "15 passed plus the added native compatibility case passed. Real production property-reader body exercised against modern, legacy, disabled, missing and invalid properties. Spring restart, resize fixed edges/settling, output clipping and partial regions covered."
+      "detail": "Private Xvfb + actual KWin X11; asserted compositor process identity, exact Acrylic Glass module mapping, active compositing and loaded effect. The MacTahoe style library loaded and the continuous translucent menu rendered visibly. Reviewed frame SHA-256 2ded8202065a56d3406aca6fef5415078a9878a711636d9ef08d4060cb200305."
     },
     {
-      "command": "python3 tests/acrylic_glass_capture.py --plugin /tmp/pr121-qualified-build/src/liquidglass_x11.so --output /tmp/pr121-x11-qualified --compositor x11 --identity WobblyProbe --expect changed --wobbly",
+      "command": "python /tmp/menu-squircle/capture.py; python /tmp/menu-squircle/compare.py",
       "result": "passed",
-      "detail": "Real isolated KWin X11 6.7.4/Xvfb/llvmpipe, private bus and verified module inode. Wobbly active during drag; shader ready. Pre-fix capture rejected: 157 glass pixels during motion. Fixed capture: 132051 glass pixels, matching deformed silhouette; rest/moving/settled frames reviewed."
-    },
-    {
-      "command": "GOLDEN_GATE_TAHOE_SOURCE=/tmp/tahoe-pr121-qualified MAC_TAHOE_NO_UPDATE_CHECK=true python3 bootstrap.py --prepare; pytest tests/test_acrylic_glass_wobbly.py tests/test_acrylic_glass_filter.py tests/test_acrylic_blur_region.py in prepared source",
-      "result": "passed",
-      "detail": "25 passed against Golden Gate staged implementation after the property correction. Later property-reader regression is independent of edition staging and passed locally."
-    },
-    {
-      "command": "python3 /tmp/pr121-qualified-visual/run.py",
-      "result": "passed",
-      "detail": "Disposable KDE neon / KWin 6.8.1 Wayland: representative Tahoe light and Golden Gate dark rest/drag/settled frames reviewed. Effect deployed atomically and VM rebooted; exact loaded-module hash checked. Earlier captures with unverified/empty guest module rejected."
-    },
-    {
-      "command": "python3 -m pytest tests/test_bootstrap.py -q -p no:cacheprovider (prior focused run)",
-      "result": "passed",
-      "detail": "40 passed; wrapper code, inputs and environment unchanged. Evidence reused for pin-only delivery."
+      "detail": "Four reviewed context-menu frames in disposable KDE neon Wayland guests; edition wallpaper/preset, appearance, window identity and stable frames verified. Separate real macOS 26 and 27 references, same-scale border alignment and 50/50 blends reviewed."
     }
   ],
-  "gallery_commit": "c485eeec652358824d2496222cb030a91f70e5dd",
-  "captures": [],
-  "review": {
-    "pull_request": "https://github.com/lestercorderomurillo/macos-tahoe-liquid-kde/pull/122",
-    "supersedes_reverted_pr": 121,
-    "fixes": [
-      "Correct native pixel probe vertex contract.",
-      "Support legacy xTesselation/yTesselation Qt properties; without them glass vanished during Wobbly on X11.",
-      "Retain reviewed X11 ABI, output-coordinate and client-region fixes."
-    ]
-  },
-  "component_capture_review": {
-    "component_sha256": "10d2bcf8a6276b4cf34e132d254e852f9400612c668db22f2150c59911d48b32",
-    "x11": {
-      "loaded": "true",
-      "active_effects": "liquidglass",
-      "plugin_loads": [
-        "qt.core.library: \"/tmp/pr121-x11-qualified/plugins/kwin-x11/effects/plugins/liquidglass.so\" loaded library"
-      ],
-      "plugin_mappings": [
-        "7f78e08c5000-7f78e08cf000 r--p 00000000 00:34 116714                     /tmp/pr121-x11-qualified/plugins/kwin-x11/effects/plugins/liquidglass.so",
-        "7f78e08cf000-7f78e08f0000 r-xp 0000a000 00:34 116714                     /tmp/pr121-x11-qualified/plugins/kwin-x11/effects/plugins/liquidglass.so",
-        "7f78e08f0000-7f78e08fc000 r--p 0002b000 00:34 116714                     /tmp/pr121-x11-qualified/plugins/kwin-x11/effects/plugins/liquidglass.so",
-        "7f78e08fc000-7f78e08fd000 r--p 00037000 00:34 116714                     /tmp/pr121-x11-qualified/plugins/kwin-x11/effects/plugins/liquidglass.so",
-        "7f78e08fd000-7f78e08fe000 rw-p 00038000 00:34 116714                     /tmp/pr121-x11-qualified/plugins/kwin-x11/effects/plugins/liquidglass.so"
-      ],
-      "dbus_owner_verified": true,
-      "kwin_pid": 1897076,
-      "identity": "WobblyProbe",
-      "client_backend": "xcb",
-      "scale": "1",
-      "compositor_backend": "x11",
-      "capture_backend": "spectacle",
-      "plugin_sha256": "3ba3c87afc4ec7225cec66b7090a4df34135ec438a90f900c91e25aeebce2fcb",
-      "kwin_version": "kwin 6.7.4"
+  "gallery_commit": "d1b5447a1c15b018999c324cb84824dc022c06dd",
+  "captures": [
+    {
+      "path": "src/screenshots/context_menu_v4-7598f30fb989.webp",
+      "sha256": "7598f30fb98925f18393d2e1561cc4866a5ac377eb8fbf45dc4b18efa4c245cd",
+      "reviewed": true
     },
-    "x11_pixels": {
-      "rest": {
-        "glass_pixels": 134076,
-        "passed": true
-      },
-      "moving": {
-        "glass_pixels": 132051,
-        "passed": true
-      },
-      "settled": {
-        "glass_pixels": 136271,
-        "passed": true
-      }
+    {
+      "path": "src/screenshots/context_menu_dark_v4-f858978d15b9.webp",
+      "sha256": "f858978d15b9baa2a99f956da698274456f6a35be850d41f97b5da27f0e3dacc",
+      "reviewed": true
     },
-    "wayland_modules": {
-      "tahoe": {
-        "module_sha256": "df9dac96ead99330f70c255195e4c7e06023249c7a0bb534531b266de09b0cfb",
-        "paths": [
-          "/usr/lib/x86_64-linux-gnu/qt6/plugins/kwin/effects/plugins/liquidglass.so"
-        ]
-      },
-      "golden-gate": {
-        "module_sha256": "8c2e7f2e3ab3d9e5291a555daa40a11fcf3e2d4d56fa23219e0586b296c2695b",
-        "paths": [
-          "/usr/lib/x86_64-linux-gnu/qt6/plugins/kwin/effects/plugins/liquidglass.so"
-        ]
-      }
-    },
-    "frames": {
-      "/tmp/pr121-qualified-visual/tahoe-light-rest.png": {
-        "sha256": "5c9978f323205fb9bdd1eb31b308bf04ed3fefe7bfe9cce414f85debdd7a2ef6",
-        "reviewed": true
-      },
-      "/tmp/pr121-qualified-visual/tahoe-light-drag.png": {
-        "sha256": "3233e80e6d20fc9913adc84c8e1f91838c993a8cc713e13eed1ab808969a6570",
-        "reviewed": true
-      },
-      "/tmp/pr121-qualified-visual/tahoe-light-settled.png": {
-        "sha256": "dc53491a43caf3cfd696b16bd78ce0d08a2df13dbd33c04729366272eef1913a",
-        "reviewed": true
-      },
-      "/tmp/pr121-qualified-visual/golden-gate-dark-rest.png": {
-        "sha256": "74d339b8b18d604df3f3209a2cab98a89e9daa529774c59fd449c98c2e11029a",
-        "reviewed": true
-      },
-      "/tmp/pr121-qualified-visual/golden-gate-dark-drag.png": {
-        "sha256": "59dd60bee22c34871e0135b5693c160ad12e20fd6f06909ceac2872ff5622575",
-        "reviewed": true
-      },
-      "/tmp/pr121-qualified-visual/golden-gate-dark-settled.png": {
-        "sha256": "fb886eac89d985b939aff73d05a30d280b1b61340f0bf814769f0d26d646e89d",
-        "reviewed": true
-      },
-      "/tmp/pr121-x11-qualified/wobbly-rest.png": {
-        "sha256": "4d3ce9c18bb3552eac4712a49c3809f548d5f1dab4afebba7f08f0b9a3e7cb90",
-        "reviewed": true
-      },
-      "/tmp/pr121-x11-qualified/wobbly-moving.png": {
-        "sha256": "b1d842d9a68dd0a806ac8e4b0ac5815a2286fbb51037422cae240fa4531217c5",
-        "reviewed": true
-      },
-      "/tmp/pr121-x11-qualified/wobbly-settled.png": {
-        "sha256": "ebaa056ab24248b86d1ee9b430d20989cda1b752331c2f7e3e6e4472a759e989",
-        "reviewed": true
-      }
+    {
+      "path": "src/screenshots/previews/menu-tahoe-comparison-fad8e594709f.png",
+      "sha256": "fad8e594709fbe25777f538cfb62f790df124800d7efa4e7c7b005c26dfe7c3d",
+      "reviewed": true
     }
+  ],
+  "component_capture_review": {
+    "provenance": "src/screenshots/previews/menu-tahoe-provenance-6238e1806103.json",
+    "reviewed": true
   },
   "coverage_limits": [
-    "Representative backend qualification is complete; the full remote matrix may continue asynchronously. No pending job is counted as passed.",
-    "X11 runtime exercised on 6.7.4; 6.6.5 has SDK build and native shader pixels, 6.8.2 has SDK build, 6.8.1 has Wayland VM rendering.",
-    "Interactive captures cover moving; resize constraints and settling are covered by the native model.",
-    "Multi-output/fractional geometry covered by executable mesh probe, not a multi-output VM.",
-    "No unrelated installer lifecycle or historical gallery recapture; original gallery provenance preserved."
+    "Only menu geometry and its Qt style integration changed; no KWin effect, shader or private SDK/ABI implementation changed. No duplicate full distro matrix was launched.",
+    "References are real light-mode macOS screenshots. Dark KDE surfaces were reviewed separately. Labels, icons, width and background-dependent colors are not pixel-identical.",
+    "The first VM run retained a pre-install style factory and showed Breeze; those frames were rejected. Storage/socket-path fixture failures and Baloo notifications were corrected before accepting the final four frames.",
+    "A preliminary Xwayland probe used the X11-only effect module and failed; it was superseded by the successful actual KWin X11 check. Wayland behavior was validated in the disposable VM.",
+    "Full remote CI for this delivery remains asynchronous on dev and is not counted as passed here. The preceding v0.68.3 dev run 43157290527 passed. Unrelated photographs retain their original provenance."
   ]
 }
