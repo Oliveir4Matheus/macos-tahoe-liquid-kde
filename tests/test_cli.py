@@ -784,6 +784,10 @@ def test_wizard_update_preserves_layout_and_respects_file_manager(
     assert cli_module._run_install_body(features) == 0
     # Force the retry condition: preservation must skip both layout passes.
     assert phases.count(("layout", "install")) == (2 if layout_runs else 0)
+    if layout_runs:
+        # Plasma must restart onto the freshly installed plugin binaries
+        # before the layout script creates applets in the old process.
+        assert phases.index(("apply", "restart_plasma")) < phases.index(("layout", "install"))
     assert (("nautilus", "install") in phases) == (file_manager == "nautilus")
     assert defaults == ([(nautilus.DOLPHIN_DESKTOP, mime)
                          for mime in (nautilus.MIME_FOLDER, nautilus.MIME_SEARCH)]

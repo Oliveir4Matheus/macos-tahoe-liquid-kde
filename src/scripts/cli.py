@@ -1131,6 +1131,13 @@ def _run_install_steps(feat: dict[str, object]) -> int:
         # Layout runs after apply — the Plasma JS scripting API can't
         # find the custom plasmoids by ID until their packages are on disk.
         if feat.get("layout", True) and step_exists("layout"):
+            # This install replaced the theme's QML/plasmoid plugin binaries
+            # while plasmashell was running. Creating applets in that still-
+            # running shell loads the new copies next to the old ones still
+            # mapped from before the install, which crashes plasmashell
+            # (deleted-library marker, KCrash). Restart onto the new binaries
+            # before the layout script touches applets.
+            run_phase("apply", "restart_plasma")
             step('Installing Layout')
             note(tr(FEATURE_DESC["layout"]))
             run_phase("layout", "install")
